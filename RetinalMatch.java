@@ -8,6 +8,8 @@ import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.core.Size;
+import org.opencv.core.Point;
+import org.opencv.core.Rect;
 
 import org.opencv.core.MatOfInt;
 
@@ -22,21 +24,15 @@ public class RetinalMatch {
         System.out.println("mat = " + mat.dump());
 
         // prepare to convert a RGB image in gray scale
-        String location = "RIDB/IM000003_20.jpg";
+        String location = "RIDB/IM000002_18.jpg";
         System.out.print("Convert the image at " + location + " in gray scale... ");
         // get the jpeg image from the internal resource folder
         Mat image = Imgcodecs.imread(location);
+        // crop
+        Rect crop = new Rect(180, 0, 1100, 1000);
+        image = new Mat(image, crop);
         // convert the image in gray scale
         Imgproc.cvtColor(image, image, Imgproc.COLOR_BGR2GRAY);
-
-        // my stuff
-        // compress image test
-        //MatOfInt par = new MatOfInt(Imgcodecs.IMWRITE_JPEG_QUALITY, 50);
-        //Imgcodecs.imwrite("IM000001_1-grey-compressed.jpg", image, par);
-
-        // write the new image on disk
-        Imgcodecs.imwrite("IM000001_1-grey.jpg", image);
-        System.out.println("Done!");
 
 
         // autocontrast histogram equalisation
@@ -47,12 +43,21 @@ public class RetinalMatch {
         //blur
         Mat blurredImage = new Mat(image.rows(), image.cols(), image.type());
         Mat result = blurredImage;
-        Imgproc.GaussianBlur(equalisedImage, blurredImage, new Size(7, 7), 0.1);
-        Imgproc.Canny(blurredImage, blurredImage, 50, 50*3, 3, false);
+        Imgproc.GaussianBlur(equalisedImage, blurredImage, new Size(7, 7), 1.3);
+        Imgproc.Canny(blurredImage, blurredImage, 40, 40*3, 3, false);
         Imgcodecs.imwrite("TestBlurred.jpg", blurredImage);
 
         // thresholding
-        Imgproc.adaptiveThreshold(blurredImage, result, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, 40);
-        Imgcodecs.imwrite("TestThresh.jpg", result);
+        Imgproc.adaptiveThreshold(blurredImage, result, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 5, 20);
+        Imgcodecs.imwrite("TestThresh1.jpg", result);
+
+        // morpholical operations
+        Mat eroeded = new Mat(image.rows(), image.cols(), image.type());
+        int kernelSize = 1;
+        int elementType = Imgproc.CV_SHAPE_RECT;
+        Mat element = Imgproc.getStructuringElement(elementType, new Size(2 * kernelSize + 1, 2 * kernelSize + 1),
+            new Point(kernelSize, kernelSize));
+        Imgproc.erode(result, eroeded, element);
+        Imgcodecs.imwrite("TestEroed2.jpg", eroeded);
     }
 }
